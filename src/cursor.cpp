@@ -21,7 +21,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-#include "node-lmdb.h"
+#include "lmdb_lib.h"
 #include <string.h>
 
 using namespace v8;
@@ -29,7 +29,7 @@ using namespace node;
 
 CursorWrap::CursorWrap(MDB_cursor *cursor) {
     this->cursor = cursor;
-    this->keyType = NodeLmdbKeyType::StringKey;
+    this->keyType = LmdbLibKeyType::StringKey;
     this->freeKey = nullptr;
 }
 
@@ -64,7 +64,7 @@ NAN_METHOD(CursorWrap::ctor) {
 
     // Get key type
     auto keyType = keyTypeFromOptions(info[2], dw->keyType);
-    if (dw->keyType == NodeLmdbKeyType::Uint32Key && keyType != NodeLmdbKeyType::Uint32Key) {
+    if (dw->keyType == LmdbLibKeyType::Uint32Key && keyType != LmdbLibKeyType::Uint32Key) {
         return Nan::ThrowError("You specified keyIsUint32 on the Dbi, so you can't use other key types with it.");
     }
 

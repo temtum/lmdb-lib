@@ -1,20 +1,20 @@
 'use strict';
 
-var crypto = require('crypto');
-var path = require('path');
-var testDirPath = path.resolve(__dirname, './benchdata');
+const crypto = require('crypto');
+const path = require('path');
+const testDirPath = path.resolve(__dirname, './benchdata');
 
-var rimraf = require('rimraf');
-var mkdirp = require('mkdirp');
-var benchmark = require('benchmark');
-var suite = new benchmark.Suite();
+const rimraf = require('rimraf');
+const mkdirp = require('mkdirp');
+const benchmark = require('benchmark');
+const suite = new benchmark.Suite();
 
-var lmdb = require('..');
+const lmdb = require('../lmdb');
 
-var env;
-var dbi;
-var keys = [];
-var total = 1000000;
+let env;
+let dbi;
+const keys = [];
+const total = 1000000;
 
 function cleanup(done) {
   // cleanup previous test directory
@@ -44,10 +44,11 @@ function setup() {
     create: true
   });
 
-  var txn = env.beginTxn();
-  var c = 0;
+  const txn = env.beginTxn();
+  let c = 0;
+
   while(c < total) {
-    var key = new Buffer(new Array(8));
+    const key = new Buffer(new Array(8));
     key.writeDoubleBE(c);
     keys.push(key.toString('hex'));
     txn.putBinary(dbi, key.toString('hex'), crypto.randomBytes(32));
@@ -56,8 +57,8 @@ function setup() {
   txn.commit();
 }
 
-var txn;
-var c = 0;
+let txn;
+let c = 0;
 
 function getIndex() {
   if (c < total - 1) {
@@ -69,19 +70,19 @@ function getIndex() {
 }
 
 function getBinary() {
-  var data = txn.getBinary(dbi, keys[getIndex()]);
+  txn.getBinary(dbi, keys[getIndex()]);
 }
 
 function getBinaryUnsafe() {
-  var data = txn.getBinaryUnsafe(dbi, keys[getIndex()]);
+  txn.getBinaryUnsafe(dbi, keys[getIndex()]);
 }
 
 function getString() {
-  var data = txn.getString(dbi, keys[getIndex()]);
+  txn.getString(dbi, keys[getIndex()]);
 }
 
 function getStringUnsafe() {
-  var data = txn.getStringUnsafe(dbi, keys[getIndex()]);
+  txn.getStringUnsafe(dbi, keys[getIndex()]);
 }
 
 cleanup(function(err) {
@@ -114,5 +115,4 @@ cleanup(function(err) {
   });
 
   suite.run();
-
 });

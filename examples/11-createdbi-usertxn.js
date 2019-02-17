@@ -1,9 +1,7 @@
-
-// Created as an example for https://github.com/Venemo/node-lmdb/issues/99
 // Demonstrates how to create a Dbi from a user-created write transaction.
 
 // Require the module
-var lmdb = require('..');
+var lmdb = require('../lmdb');
 // Now you can use the module
 
 // Print the version

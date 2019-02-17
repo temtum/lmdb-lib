@@ -1,6 +1,6 @@
 
 // Require the module
-var lmdb = require('..');
+var lmdb = require('../lmdb');
 // Now you can use the module
 
 // Print the version

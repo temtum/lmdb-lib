@@ -1,5 +1,5 @@
 
-var lmdb = require('..');
+var lmdb = require('../lmdb');
 var env = new lmdb.Env();
 env.open({
     // Path to the environment

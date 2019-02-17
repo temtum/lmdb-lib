@@ -7,7 +7,7 @@ var chai = require('chai');
 var should = chai.should();
 var spawn = require('child_process').spawn;
 
-var lmdb = require('..');
+var lmdb = require('../lmdb');
 const MAX_DB_SIZE = 256 * 1024 * 1024;
 
 describe('Node.js LMDB Bindings', function() {

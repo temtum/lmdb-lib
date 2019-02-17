@@ -21,7 +21,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-#include "node-lmdb.h"
+#include "lmdb_lib.h"
 
 using namespace v8;
 using namespace node;

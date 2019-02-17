@@ -1,18 +1,20 @@
 'use strict';
 
-var assert = require('assert');
-var cluster = require('cluster');
-var path = require('path');
-var numCPUs = require('os').cpus().length;
+const assert = require('assert');
+const cluster = require('cluster');
+const path = require('path');
+const numCPUs = require('os').cpus().length;
 
-var lmdb = require('..');
+const lmdb = require('../lmdb');
+
 const MAX_DB_SIZE = 256 * 1024 * 1024;
 
 if (cluster.isMaster) {
 
   // The master process
 
-  var env = new lmdb.Env();
+  const env = new lmdb.Env();
+
   env.open({
     path: path.resolve(__dirname, './testdata'),
     maxDbs: 10,
@@ -20,22 +22,23 @@ if (cluster.isMaster) {
     maxReaders: 126
   });
 
-  var dbi = env.openDbi({
+  const dbi = env.openDbi({
     name: 'cluster',
     create: true
   });
 
-  var workerCount = Math.min(numCPUs * 2, 20);
-  var value = Buffer.from('48656c6c6f2c20776f726c6421', 'hex');
-
+  const workerCount = Math.min(numCPUs * 2, 20);
+  const value = Buffer.from('48656c6c6f2c20776f726c6421', 'hex');
   // This will start as many workers as there are CPUs available.
-  var workers = [];
-  for (var i = 0; i < workerCount; i++) {
-    var worker = cluster.fork();
+  const workers = [];
+
+  for (let i = 0; i < workerCount; i++) {
+    const worker = cluster.fork();
+
     workers.push(worker);
   }
 
-  var messages = [];
+  const messages = [];
 
   workers.forEach(function(worker) {
     worker.on('message', function(msg) {
@@ -53,23 +56,24 @@ if (cluster.isMaster) {
     });
   });
 
-  var txn = env.beginTxn();
-  for (var i = 0; i < workers.length; i++) {
+  const txn = env.beginTxn();
+
+  for (let i = 0; i < workers.length; i++) {
     txn.putBinary(dbi, 'key' + i, value);
   }
 
   txn.commit();
 
-  for (var i = 0; i < workers.length; i++) {
-    var worker = workers[i];
+  for (let i = 0; i < workers.length; i++) {
+    const worker = workers[i];
+
     worker.send({key: 'key' + i});
-  };
+  }
 
 } else {
-
   // The worker process
+  const env = new lmdb.Env();
 
-  var env = new lmdb.Env();
   env.open({
     path: path.resolve(__dirname, './testdata'),
     maxDbs: 10,
@@ -78,21 +82,21 @@ if (cluster.isMaster) {
     readOnly: true
   });
 
-  var dbi = env.openDbi({
+  const dbi = env.openDbi({
     name: 'cluster'
   });
 
   process.on('message', function(msg) {
     if (msg.key) {
-      var txn = env.beginTxn({readOnly: true});
-      var value = txn.getBinary(dbi, msg.key);
-      
+      const txn = env.beginTxn({readOnly: true});
+      const value = txn.getBinary(dbi, msg.key);
+
       if (value === null) {
-        process.send("");
+        process.send('');
       } else {
         process.send(value.toString('hex'));
       }
-      
+
       txn.abort();
     }
   });

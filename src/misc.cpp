@@ -21,7 +21,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-#include "node-lmdb.h"
+#include "lmdb_lib.h"
 #include <string.h>
 #include <stdio.h>
 
@@ -47,18 +47,18 @@ void setFlagFromValue(int *flags, int flag, const char *name, bool defaultValue,
     }
 }
 
-NodeLmdbKeyType keyTypeFromOptions(const Local<Value> &val, NodeLmdbKeyType defaultKeyType) {
+LmdbLibKeyType keyTypeFromOptions(const Local<Value> &val, LmdbLibKeyType defaultKeyType) {
     if (val->IsNull() || val->IsUndefined()) {
         return defaultKeyType;
     }
     if (!val->IsObject()) {
         Nan::ThrowError("keyTypeFromOptions: Invalid argument passed to a node-lmdb function, must be an object.");
-        return NodeLmdbKeyType::InvalidKey;
+        return LmdbLibKeyType::InvalidKey;
     }
     
     auto obj = val->ToObject();
 
-    NodeLmdbKeyType keyType = defaultKeyType;
+    LmdbLibKeyType keyType = defaultKeyType;
     int keyIsUint32 = 0;
     int keyIsBuffer = 0;
     int keyIsString = 0;
@@ -70,67 +70,67 @@ NodeLmdbKeyType keyTypeFromOptions(const Local<Value> &val, NodeLmdbKeyType defa
     const char *keySpecificationErrorText = "You can't specify multiple key types at once. Either set keyIsUint32, or keyIsBuffer or keyIsString (default).";
     
     if (keyIsUint32) {
-        keyType = NodeLmdbKeyType::Uint32Key;
-        
+        keyType = LmdbLibKeyType::Uint32Key;
+
         if (keyIsBuffer || keyIsString) {
             Nan::ThrowError(keySpecificationErrorText);
-            return NodeLmdbKeyType::InvalidKey;
+            return LmdbLibKeyType::InvalidKey;
         }
     }
     else if (keyIsBuffer) {
-        keyType = NodeLmdbKeyType::BinaryKey;
-        
+        keyType = LmdbLibKeyType::BinaryKey;
+
         if (keyIsUint32 || keyIsString) {
             Nan::ThrowError(keySpecificationErrorText);
-            return NodeLmdbKeyType::InvalidKey;
+            return LmdbLibKeyType::InvalidKey;
         }
     }
     else if (keyIsString) {
-        keyType = NodeLmdbKeyType::StringKey;
+        keyType = LmdbLibKeyType::StringKey;
     }
     
     return keyType;
 }
 
-NodeLmdbKeyType inferKeyType(const Local<Value> &val) {
+LmdbLibKeyType inferKeyType(const Local<Value> &val) {
     if (val->IsString()) {
-        return NodeLmdbKeyType::StringKey;
+        return LmdbLibKeyType::StringKey;
     }
     if (val->IsUint32()) {
-        return NodeLmdbKeyType::Uint32Key;
+        return LmdbLibKeyType::Uint32Key;
     }
     if (node::Buffer::HasInstance(val)) {
-        return NodeLmdbKeyType::BinaryKey;
+        return LmdbLibKeyType::BinaryKey;
     }
-    
-    return NodeLmdbKeyType::InvalidKey;
+
+    return LmdbLibKeyType::InvalidKey;
 }
 
-NodeLmdbKeyType inferAndValidateKeyType(const Local<Value> &key, const Local<Value> &options, NodeLmdbKeyType dbiKeyType, bool &isValid) {
-    auto keyType = keyTypeFromOptions(options, NodeLmdbKeyType::DefaultKey);
+LmdbLibKeyType inferAndValidateKeyType(const Local<Value> &key, const Local<Value> &options, LmdbLibKeyType dbiKeyType, bool &isValid) {
+    auto keyType = keyTypeFromOptions(options, LmdbLibKeyType::DefaultKey);
     auto inferredKeyType = inferKeyType(key);
     isValid = false;
-    
-    if (keyType != NodeLmdbKeyType::DefaultKey && inferredKeyType != keyType) {
+
+    if (keyType != LmdbLibKeyType::DefaultKey && inferredKeyType != keyType) {
         Nan::ThrowError("Specified key type doesn't match the key you gave.");
-        return NodeLmdbKeyType::InvalidKey;
+        return LmdbLibKeyType::InvalidKey;
     }
     else {
         keyType = inferredKeyType;
     }
-    if (dbiKeyType == NodeLmdbKeyType::Uint32Key && keyType != NodeLmdbKeyType::Uint32Key) {
+    if (dbiKeyType == LmdbLibKeyType::Uint32Key && keyType != LmdbLibKeyType::Uint32Key) {
         Nan::ThrowError("You specified keyIsUint32 on the Dbi, so you can't use other key types with it.");
-        return NodeLmdbKeyType::InvalidKey;
+        return LmdbLibKeyType::InvalidKey;
     }
     
     isValid = true;
     return keyType;
 }
 
-argtokey_callback_t argToKey(const Local<Value> &val, MDB_val &key, NodeLmdbKeyType keyType, bool &isValid) {
+argtokey_callback_t argToKey(const Local<Value> &val, MDB_val &key, LmdbLibKeyType keyType, bool &isValid) {
     isValid = false;
 
-    if (keyType == NodeLmdbKeyType::StringKey) {
+    if (keyType == LmdbLibKeyType::StringKey) {
         if (!val->IsString()) {
             Nan::ThrowError("Invalid key. Should be a string. (Specified with env.openDbi)");
             return nullptr;
@@ -142,7 +142,7 @@ argtokey_callback_t argToKey(const Local<Value> &val, MDB_val &key, NodeLmdbKeyT
             delete[] (uint16_t*)key.mv_data;
         });
     }
-    else if (keyType == NodeLmdbKeyType::Uint32Key) {
+    else if (keyType == LmdbLibKeyType::Uint32Key) {
         if (!val->IsUint32()) {
             Nan::ThrowError("Invalid key. Should be an unsigned 32-bit integer. (Specified with env.openDbi)");
             return nullptr;
@@ -155,7 +155,7 @@ argtokey_callback_t argToKey(const Local<Value> &val, MDB_val &key, NodeLmdbKeyT
 
         return nullptr;
     }
-    else if (keyType == NodeLmdbKeyType::BinaryKey) {
+    else if (keyType == LmdbLibKeyType::BinaryKey) {
         if (!node::Buffer::HasInstance(val)) {
             Nan::ThrowError("Invalid key. Should be a Buffer. (Specified with env.openDbi)");
             return nullptr;
@@ -167,7 +167,7 @@ argtokey_callback_t argToKey(const Local<Value> &val, MDB_val &key, NodeLmdbKeyT
         
         return nullptr;
     }
-    else if (keyType == NodeLmdbKeyType::InvalidKey) {
+    else if (keyType == LmdbLibKeyType::InvalidKey) {
         Nan::ThrowError("Invalid key type. This might be a bug in node-lmdb.");
     }
     else {
@@ -177,13 +177,13 @@ argtokey_callback_t argToKey(const Local<Value> &val, MDB_val &key, NodeLmdbKeyT
     return nullptr;
 }
 
-Local<Value> keyToHandle(MDB_val &key, NodeLmdbKeyType keyType) {
+Local<Value> keyToHandle(MDB_val &key, LmdbLibKeyType keyType) {
     switch (keyType) {
-    case NodeLmdbKeyType::Uint32Key:
+    case LmdbLibKeyType::Uint32Key:
         return Nan::New<Integer>(*((uint32_t*)key.mv_data));
-    case NodeLmdbKeyType::BinaryKey:
+    case LmdbLibKeyType::BinaryKey:
         return valToBinary(key);
-    case NodeLmdbKeyType::StringKey:
+    case LmdbLibKeyType::StringKey:
         return valToString(key);
     default:
         Nan::ThrowError("Unknown key type. This is a bug in node-lmdb.");

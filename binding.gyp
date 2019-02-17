@@ -1,12 +1,12 @@
 {
   "targets": [
     {
-      "target_name": "node-lmdb",
+      "target_name": "lmdb-lib",
       "win_delay_load_hook": "false",
       "sources": [
-        "dependencies/lmdb/libraries/liblmdb/mdb.c",
-        "dependencies/lmdb/libraries/liblmdb/midl.c",
-        "src/node-lmdb.cpp",
+        "deps/lmdb/libraries/liblmdb/mdb.c",
+        "deps/lmdb/libraries/liblmdb/midl.c",
+        "src/lmdb_lib.cpp",
         "src/env.cpp",
         "src/misc.cpp",
         "src/txn.cpp",
@@ -15,7 +15,7 @@
       ],
       "include_dirs": [
         "<!(node -e \"require('nan')\")",
-        "dependencies/lmdb/libraries/liblmdb"
+        "deps/lmdb/libraries/liblmdb"
       ],
       "conditions": [
         ["OS=='linux'", {
@@ -46,6 +46,7 @@
         }],
         ["OS=='mac'", {
           "xcode_settings": {
+            "OTHER_CFLAGS": ["-Wno-unused-parameter","-Wno-missing-field-initializers"],
             "OTHER_CPLUSPLUSFLAGS" : ["-std=c++11"],
             "MACOSX_DEPLOYMENT_TARGET": "10.7",
             "OTHER_LDFLAGS": ["-std=c++11"],

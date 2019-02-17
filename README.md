@@ -1,9 +1,7 @@
-node-lmdb
+LMDB-LIB
 =========
 
-This is a node.js binding for LMDB, an extremely fast and lightweight transactional key-value store database.
-
-[![Donate](https://img.shields.io/badge/Donate-PayPal-green.svg)](https://www.paypal.com/cgi-bin/webscr?cmd=_donations&business=venemo%40msn%2ecom&lc=US&item_name=to%20Timur%20Kristof%2c%20for%20node%2dlmdb%20development&item_number=node%2dlmdb&no_note=0&currency_code=USD&bn=PP%2dDonationsBF%3abtn_donate_SM%2egif%3aNonHostedGuest)
+This is a node.js binding for LMDB, forked from Venemo/node-lmdb.
 
 About
 -----
@@ -32,7 +30,7 @@ Here are the main highlights of LMDB, for more, visit http://symas.com/mdb :)
 
 ### License info
 
-The `node-lmdb` code is licensed to you under the terms of the MIT license. LMDB itself is licensed under its own OpenLDAP public license (which is similarly permissive).
+The `lmdb-lib` code is licensed to you under the terms of the MIT license. LMDB itself is licensed under its own OpenLDAP public license (which is similarly permissive).
 
 Usage
 -----
@@ -44,7 +42,7 @@ Usage
 Just like with any other node module, the first step is to `require()` the module.
 
 ```javascript
-var lmdb = require('node-lmdb');
+const lmdb = require('lmdb-lib');
 ```
 
 #### Step 1: create an environment
@@ -53,7 +51,7 @@ var lmdb = require('node-lmdb');
 `open()` accepts an object literal in which you can specify the configuration options for the environment.
 
 ```javascript
-var env = new lmdb.Env();
+const env = new lmdb.Env();
 env.open({
     path: __dirname + "/mydata",
     mapSize: 2*1024*1024*1024, // maximum database size
@@ -72,7 +70,7 @@ env.close();
 An environment (`Env`) can contain one or more databases. Open a database with `env.openDbi()` which takes an object literal with which you can configure your database.
 
 ```javascript
-var dbi = env.openDbi({
+const dbi = env.openDbi({
     name: "myPrettyDatabase",
     create: true // will create if database did not exist
 })
@@ -94,8 +92,8 @@ You can use the methods `getString()`, `getBinary()`, `getNumber()` and `getBool
 **IMPORTANT:** always close your transactions with `abort()` or `commit()` when you are done with them.
 
 ```javascript
-var txn = env.beginTxn();
-var value = txn.getString(dbi, 1);
+const txn = env.beginTxn();
+const value = txn.getString(dbi, 1);
 
 console.log(value);
 
@@ -129,9 +127,9 @@ Here is how you use LMDB in a typical scenario:
 Example iteration over a database with a `Cursor`:
 
 ```javascript
-var cursor = new lmdb.Cursor(txn, dbi);
+const cursor = new lmdb.Cursor(txn, dbi);
 
-for (var found = cursor.goToFirst(); found !== null; found = cursor.goToNext()) {
+for (const found = cursor.goToFirst(); found !== null; found = cursor.goToNext()) {
     // Here 'found' contains the key, and you can get the data with eg. getCurrentString/getCurrentBinary etc.
     // ...
 }
@@ -140,10 +138,10 @@ for (var found = cursor.goToFirst(); found !== null; found = cursor.goToNext()) 
 The cursor `goTo` methods (`goToFirst`, `goToNext`, etc.) will return the current key. When an item is not found, `null` is returned.
 Beware that the key itself could be a *falsy* JavaScript value, so you need to explicitly check against `null` with the `!==` operator in your loops.
 
-### Data Types in node-lmdb
+### Data Types in lmdb-lib
 
-LMDB is very simple and fast. Using node-lmdb provides close to the native C API functionally, but expressed via a natural
-javascript API. To make simple things simple, node-lmdb defaults to presenting keys and values in LMDB as strings.
+LMDB is very simple and fast. Using lmdb-lib provides close to the native C API functionally, but expressed via a natural
+javascript API. To make simple things simple, lmdb-lib defaults to presenting keys and values in LMDB as strings.
 For convenience number, boolean and `Buffer` values are also supported.
 
 The simplest way to store complex data types (such as objects) is to use `JSON.stringify` before putting it into the database
@@ -159,7 +157,7 @@ See our chapter *Working with strings* for more details.
 #### Keys
 
 * *Unsigned 32-bit integers*: The one exception in LMDBs representation of keys is an optimisation for fixed-length keys. This is exposed
-by node-lmdb for one particular fixed length type: unsigned 32 bit integers. To use this optimisation specify `keyIsUint32: true`
+by lmdb-lib for one particular fixed length type: unsigned 32 bit integers. To use this optimisation specify `keyIsUint32: true`
 to `openDbi`. Because the `keyIsUint32 : true` option is passed through to LMDB and stored in the LMDB metadata for the database,
 a database created with this option set cannot be accessed without setting this option, and vice-versa.
 * *Buffers*: If you pass `keyIsBuffer: true`, you can work with node `Buffer` instances as keys.
@@ -182,10 +180,10 @@ When working with transactions, you can override the key type passed to `openDbi
 For example:
 
 ```
-var buffer = new Buffer('48656c6c6f2c20776f726c6421', 'hex');
-var key = new Buffer('key2');
+const buffer = new Buffer('48656c6c6f2c20776f726c6421', 'hex');
+const key = new Buffer('key2');
 txn.putBinary(dbi, key, buffer, { keyIsBuffer: true });
-var data = txn.getBinary(dbi, key, { keyIsBuffer: true });
+const data = txn.getBinary(dbi, key, { keyIsBuffer: true });
 data.should.deep.equal(buffer);
 txn.del(dbi, key, { keyIsBuffer: true });
 ```
@@ -203,7 +201,7 @@ You can find some in the source tree. There are some basic examples and I intend
 The basic examples we currently have:
 
 * `examples/1-env.js` - shows basic usage of `Env`, `Dbi` and `Txn` operating on string values
-* `examples/2-datatypes.js` - shows how to use various data types for your data
+* `examples/2-datatypes.js` - shows how to use constious data types for your data
 * `examples/3-multiple-transactions.js` - shows how LMDB will behave if you operate with multiple transactions
 * `examples/4-cursors.js` - shows how to work with cursors on a basic database
 * `examples/5-dupsort.js` - shows how to use a `dupSort` database with cursors
@@ -215,7 +213,7 @@ The basic examples we currently have:
 
 Advanced examples:
 
-* `examples/advanced1-indexing.js` - this is a module pattern example which demonstrates the implementation of a search engine prototype
+* `examples/advanced-indexing.js` - this is a module pattern example which demonstrates the implementation of a search engine prototype
 * *More will come later, so don't forget to check back!*
 
 ### Caveats
@@ -230,21 +228,21 @@ as to be negligible - the `Unsafe` methods should be avoided.
 
 #### Working with strings
 
-Strings can come from many different places and can have many different encodings. In the JavaScript world (and therefore the node.js world) strings are encoded in UTF-16, so every string stored with node-lmdb is also encoded in UTF-16 internally. This means that the string API (`getString`, `putString`, etc.) will only work with UTF-16 encoded strings.
+Strings can come from many different places and can have many different encodings. In the JavaScript world (and therefore the node.js world) strings are encoded in UTF-16, so every string stored with lmdb-lib is also encoded in UTF-16 internally. This means that the string API (`getString`, `putString`, etc.) will only work with UTF-16 encoded strings.
 
 If you only use strings that come from JavaScript code or other code that is a “good node citizen”, you never have to worry about encoding.
 
 ##### How to use other encodings
 
-This has come up many times in discussions, so here is a way to use other encodings supported by node.js. You can use `Buffer`s with node-lmdb, which are a very friendly way to work with binary data. They also come in handy when you store strings in your database with encodings other than UTF-16.
+This has come up many times in discussions, so here is a way to use other encodings supported by node.js. You can use `Buffer`s with lmdb-lib, which are a very friendly way to work with binary data. They also come in handy when you store strings in your database with encodings other than UTF-16.
 
 You can, for example, read a UTF-8 string as a buffer, and then use `Buffer`'s `toString` method and specify the encoding:
 
 ```javascript
 // Get stored data as Buffer
-var buf = txn.getBinary(dbi, key);
+const buf = txn.getBinary(dbi, key);
 // Use the Buffer toString API to convert from UTF-8 to a JavaScript string
-var str = buf.toString('utf8');
+const str = buf.toString('utf8');
 ```
 
 Useful links:
@@ -256,7 +254,7 @@ https://github.com/nodejs/node/blob/master/lib/buffer.js#L490
 
 ##### Storing UTF-16 strings as Buffers
 
-While node.js doesn't require the UTF-16 strings to be zero-terminated, node-lmdb automatically and transparently zero-terminates every string internally.
+While node.js doesn't require the UTF-16 strings to be zero-terminated, lmdb-lib automatically and transparently zero-terminates every string internally.
 As a user, this shouldn't concern you, but if you want to write a string using the Buffer API and read it as a string, you are in for a nasty surprise.
 
 However, it will work correctly if you manually add the terminating zero to your buffer.
@@ -265,23 +263,23 @@ Conceptually, something like this will work:
 
 ```javascript
 // The string we want to store using a buffer
-var expectedString = 'Hello world!';
+const expectedString = 'Hello world!';
 
-// node-lmdb internally stores a terminating zero, so we need to manually emulate that here
+// lmdb-lib internally stores a terminating zero, so we need to manually emulate that here
 // NOTE: this would NEVER work without 'utf16le'!
-var buf = Buffer.from(expectedString + '\0', 'utf16le');
+const buf = Buffer.from(expectedString + '\0', 'utf16le');
 
 // Store data as binary
 txn.putBinary(dbi, key, buf);
       
 // Retrieve same data as string and check
-var data3 = txn.getString(dbi, key);
+const data3 = txn.getString(dbi, key);
 
 // At this point, data3 is equal to expectedString
 
 ```
 
-### Limitations of node-lmdb
+### Limitations of lmdb-lib
 
 * Fixed address map (called `MDB_FIXEDMAP` in C) features are **not exposed** by this binding because they are highly experimental
 * There is no option to specify a custom key comparison method, so if the order of traversal is important,
@@ -300,19 +298,19 @@ Contributing
 If you find problems with this module, open an issue on GitHub.
 Also feel free to send me pull requests. Contributions are more than welcome! :)
 
-### Building node-lmdb
+### Building lmdb-lib
 
-LMDB is bundled in `node-lmdb` so you can simply build this module using `node-gyp`.
+LMDB is bundled in `lmdb-lib` so you can simply build this module using `node-gyp`.
 
 ```bash
 # Install node-gyp globally (needs admin permissions)
 npm -g install node-gyp
 
-# Clone node-lmdb
-git clone git@github.com:Venemo/node-lmdb.git
+# Clone lmdb-lib
+git clone git@github.com:temtum/lmdb-lib.git
 
-# Go to node-lmdb directory
-cd node-lmdb
+# Go to lmdb-lib directory
+cd lmdb-lib
 
 # At first, you need to download all dependencies
 npm install
@@ -322,7 +320,7 @@ node-gyp configure
 node-gyp build
 ```
 
-### Building node-lmdb on Windows
+### Building lmdb-lib on Windows
 
 Windows isn't such a great platform for native node addons, but it can be made to work.
 See this very informative thread: https://github.com/nodejs/node-gyp/issues/629
@@ -353,10 +351,10 @@ already, so easiest is to use "Change installation" in the Control Panel and sel
 
 Congrats! Now you can work with native node.js modules.
 
-When you are building node-lmdb for the first time, you need to install node-lmdb's dependencies with `npm install`:
+When you are building lmdb-lib for the first time, you need to install lmdb-lib's dependencies with `npm install`:
 
 ```
-cd node-lmdb
+cd lmdb-lib
 npm install
 ```
 
@@ -364,7 +362,7 @@ Note that `npm install` will also attempt to build the module. However once you 
 you only need to do the following for a build:
 
 ```
-cd node-lmdb
+cd lmdb-lib
 node-gyp configure
 node-gyp build
 ```
@@ -389,7 +387,7 @@ git subtree pull --prefix=dependencies/lmdb lmdb HEAD --squash
 LMDB is one of the fastest databases on the planet, because it's **in-process** and **zero-copy**, which means it runs within your app, and not somewhere else,
 so it doesn't push your data through sockets and can retrieve your data without copying it in memory.
 
-We don't have any benchmarks for node-lmdb but you can enjoy a detailed benchmark of LMDB here: http://symas.com/mdb/microbench/
+We don't have any benchmarks for lmdb-lib but you can enjoy a detailed benchmark of LMDB here: http://symas.com/mdb/microbench/
 obviously, the V8 wrapper will have some negative impact on performance, but I wouldn't expect a significant difference.
 
 #### Why is the code so ugly?
@@ -405,7 +403,7 @@ Zero-copy is implemented for string and binary values via a V8 custom external s
 
 #### How did you do it?
 
-These are the places I got my knowledge when developing node-lmdb:
+These are the places I got my knowledge when developing lmdb-lib:
 
 * V8 reference documentation: http://bespin.cz/~ondras/html/
 * Node.js C++ addons documentation: http://nodejs.org/api/addons.html
@@ -434,14 +432,9 @@ Big thank you to everybody!
 Support
 -------
 
-node-lmdb is licensed to you under the terms of the MIT license, which means it comes with no warranty by default.
+lmdb-lib is licensed to you under the terms of the MIT license, which means it comes with no warranty by default.
 
 However,
 
 * LMDB: Symas (the authors of LMDB) [offers commercial support of LMDB](https://symas.com/lightning-memory-mapped-database/).
-* node-lmdb: If you have urgent issues with node-lmdb or would like to get support, you can contact @Venemo (the node-lmdb author).
-
-You can also consider donating to support node-lmdb development:
-
-[![Donate](https://img.shields.io/badge/Donate-PayPal-green.svg)](https://www.paypal.com/cgi-bin/webscr?cmd=_donations&business=venemo%40msn%2ecom&lc=US&item_name=to%20Timur%20Kristof%2c%20for%20node%2dlmdb%20development&item_number=node%2dlmdb&no_note=0&currency_code=USD&bn=PP%2dDonationsBF%3abtn_donate_SM%2egif%3aNonHostedGuest)
-
+* lmdb-lib: If you have urgent issues with lmdb-lib or would like to get support, you can contact @Venemo (the lmdb-lib author).

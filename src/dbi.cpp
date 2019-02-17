@@ -21,7 +21,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-#include "node-lmdb.h"
+#include "lmdb_lib.h"
 #include <cstdio>
 
 using namespace v8;
@@ -32,7 +32,7 @@ void setFlagFromValue(int *flags, int flag, const char *name, bool defaultValue,
 DbiWrap::DbiWrap(MDB_env *env, MDB_dbi dbi) {
     this->env = env;
     this->dbi = dbi;
-    this->keyType = NodeLmdbKeyType::StringKey;
+    this->keyType = LmdbLibKeyType::StringKey;
     this->isOpen = false;
     this->ew = nullptr;
 }
@@ -66,7 +66,7 @@ NAN_METHOD(DbiWrap::ctor) {
     int txnFlags = 0;
     Local<String> name;
     bool nameIsNull = false;
-    NodeLmdbKeyType keyType = NodeLmdbKeyType::StringKey;
+    LmdbLibKeyType keyType = LmdbLibKeyType::StringKey;
     bool needsTransaction = true;
     bool isOpen = false;
 
@@ -92,12 +92,12 @@ NAN_METHOD(DbiWrap::ctor) {
         // TODO: wrap mdb_set_dupsort
 
         keyType = keyTypeFromOptions(options);
-        if (keyType == NodeLmdbKeyType::InvalidKey) {
+        if (keyType == LmdbLibKeyType::InvalidKey) {
             // NOTE: Error has already been thrown inside keyTypeFromOptions
             return;
         }
         
-        if (keyType == NodeLmdbKeyType::Uint32Key) {
+        if (keyType == LmdbLibKeyType::Uint32Key) {
             flags |= MDB_INTEGERKEY;
         }
 
