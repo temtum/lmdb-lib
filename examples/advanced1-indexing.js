@@ -2,7 +2,7 @@
 // Indexing engine example
 // ----------
 //
-// The purpose of this example is to show how to implement an indexing engine using node-lmdb.
+// The purpose of this example is to show how to implement an indexing engine using lmdb-lib.
 // It's not intended to be feature-full, just enough to give you an idea how to use the LMDB API.
 //
 // Limitations of this indexing engine:

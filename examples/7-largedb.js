@@ -1,6 +1,6 @@
 
 /*
-    Example that shows how to use node-lmdb with LARGE databases
+    Example that shows how to use lmdb-lib with LARGE databases
 */
 
 // Set things up

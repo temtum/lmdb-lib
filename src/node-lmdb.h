@@ -1,5 +1,5 @@
 
-// This file is part of node-lmdb, the Node.js binding for lmdb
+// This file is part of lmdb-lib, the Node.js binding for lmdb
 // Copyright (c) 2013-2017 Timur Kristóf
 // Licensed to you under the terms of the MIT license
 //
@@ -38,10 +38,10 @@ using namespace node;
 
 enum class NodeLmdbKeyType {
 
-    // Invalid key (used internally by node-lmdb)
+    // Invalid key (used internally by lmdb-lib)
     InvalidKey = -1,
     
-    // Default key (used internally by node-lmdb)
+    // Default key (used internally by lmdb-lib)
     DefaultKey = 0,
 
     // UCS-2/UTF-16 with zero terminator - Appears to V8 as string

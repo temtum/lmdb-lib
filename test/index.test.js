@@ -136,7 +136,7 @@ describe('Node.js LMDB Bindings', function() {
       // The string we want to store using a buffer
       var expectedString = 'Hello \0 world!';
       
-      // node-lmdb internally stores a terminating zero, so we need to manually emulate that here
+      // lmdb-lib internally stores a terminating zero, so we need to manually emulate that here
       // NOTE: this would NEVER work without 'utf16le'!
       var buf = Buffer.from(expectedString + '\0', 'utf16le');
       var key = 'hello';
