@@ -25,8 +25,6 @@
 #include <string.h>
 #include <stdio.h>
 
-static thread_local uint32_t currentUint32Key = 0;
-
 void setupExportMisc(Handle<Object> exports) {
     Local<Object> versionObj = Nan::New<Object>();
 
@@ -149,11 +147,14 @@ argtokey_callback_t argToKey(const Local<Value> &val, MDB_val &key, LmdbLibKeyTy
         }
         
         isValid = true;
-        currentUint32Key = val->Uint32Value();
+        uint32_t* uint32Key = new uint32_t;
+        *uint32Key = val->Uint32Value();
         key.mv_size = sizeof(uint32_t);
-        key.mv_data = &currentUint32Key;
+        key.mv_data = uint32Key;
 
-        return nullptr;
+        return ([](MDB_val &key) -> void {
+            delete (uint32_t*)key.mv_data;
+        });
     }
     else if (keyType == LmdbLibKeyType::BinaryKey) {
         if (!node::Buffer::HasInstance(val)) {
