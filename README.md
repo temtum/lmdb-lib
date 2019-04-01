@@ -111,7 +111,7 @@ txn.commit();
 
 #### Asynchronous batched operations
 
-You can batch together a set of operations to be processed asynchronously with `node-lmdb`. Committing multiple operations at once can improve performance, and performing a batch of operations and using sync transactions (slower, but maintains crash-proof integrity) can be efficiently delegated to an asynchronous thread. In addition, writes can be defined as conditional by specifying the required value to match in order for the operation to be performed, to allow for deterministic atomic writes based on prior state. The `batchWrite` method accepts an array of write operation requests, where each operation is an object or array. If it is an object, the supported properties are:
+You can batch together a set of operations to be processed asynchronously with `lmdb-lib`. Committing multiple operations at once can improve performance, and performing a batch of operations and using sync transactions (slower, but maintains crash-proof integrity) can be efficiently delegated to an asynchronous thread. In addition, writes can be defined as conditional by specifying the required value to match in order for the operation to be performed, to allow for deterministic atomic writes based on prior state. The `batchWrite` method accepts an array of write operation requests, where each operation is an object or array. If it is an object, the supported properties are:
 * `db` (required) - The database to write to
 * `key` (required) - The key to write
 * `value` (optional) - If specified, this is the value to `put` into the entry. If absent or undefined, this write operation will be a delete, and delete this key. This should be a binary/buffer value.
@@ -125,7 +125,7 @@ If the write operation is a specified with an array, the supported elements are:
 * A two element array for `del`eting data: `[db, key]`
 * A four element array for conditionally `put`ing or `del`eting data: `[db, key, value, ifValue]` (where `value` and `ifValue` are as specificied in the object definition)
 
-When `batchWrite` is called, `node-ldmb` will asynchronously create a new write transaction, execute all the operations in the provided array, except for any conditional writes where the condition failed, and commit the transaction, if there were no errors. For conditional writes, if the condition did not match, the write will be skipped, but the transaction will still be committed. However, if any errors occur, the transaction will be aborted. This entire transaction will be created by `node-lmdb` and executed in a separate thread. The callback function will be called once the transaction is finished. It is possible for an explicit write transaction in the main JS thread to block or be blocked by the asynchronous transaction.
+When `batchWrite` is called, `node-ldmb` will asynchronously create a new write transaction, execute all the operations in the provided array, except for any conditional writes where the condition failed, and commit the transaction, if there were no errors. For conditional writes, if the condition did not match, the write will be skipped, but the transaction will still be committed. However, if any errors occur, the transaction will be aborted. This entire transaction will be created by `lmdb-lib` and executed in a separate thread. The callback function will be called once the transaction is finished. It is possible for an explicit write transaction in the main JS thread to block or be blocked by the asynchronous transaction.
 For example:
 ```javascript
 env.batchWrite([

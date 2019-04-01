@@ -40,5 +40,5 @@ extern "C" {
     }
 
     // The standard node macro
-    NODE_MODULE(lmdb_lib, initializeModule)
+    NODE_MODULE(node_lmdb, initializeModule)
 }

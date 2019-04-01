@@ -374,7 +374,7 @@ NAN_METHOD(TxnWrap::del) {
         dataHandle = Nan::Undefined();
     }
     else {
-        return Nan::ThrowError("Unknown arguments to cursor.del, this could be a node-lmdb bug!");
+        return Nan::ThrowError("Unknown arguments to cursor.del, this could be a lmdb-lib bug!");
     }
 
     MDB_val key;

@@ -50,7 +50,7 @@ LmdbLibKeyType keyTypeFromOptions(const Local<Value> &val, LmdbLibKeyType defaul
         return defaultKeyType;
     }
     if (!val->IsObject()) {
-        Nan::ThrowError("keyTypeFromOptions: Invalid argument passed to a node-lmdb function, must be an object.");
+        Nan::ThrowError("keyTypeFromOptions: Invalid argument passed to a lmdb-lb function, must be an object.");
         return LmdbLibKeyType::InvalidKey;
     }
     
@@ -169,10 +169,10 @@ argtokey_callback_t argToKey(const Local<Value> &val, MDB_val &key, LmdbLibKeyTy
         return nullptr;
     }
     else if (keyType == LmdbLibKeyType::InvalidKey) {
-        Nan::ThrowError("Invalid key type. This might be a bug in node-lmdb.");
+        Nan::ThrowError("Invalid key type. This might be a bug in lmdb-lib.");
     }
     else {
-        Nan::ThrowError("Unknown key type. This is a bug in node-lmdb.");
+        Nan::ThrowError("Unknown key type. This is a bug in lmdb-lib.");
     }
 
     return nullptr;
@@ -187,7 +187,7 @@ Local<Value> keyToHandle(MDB_val &key, LmdbLibKeyType keyType) {
     case LmdbLibKeyType::StringKey:
         return valToString(key);
     default:
-        Nan::ThrowError("Unknown key type. This is a bug in node-lmdb.");
+        Nan::ThrowError("Unknown key type. This is a bug in lmdb-lib.");
         return Nan::Undefined();
     }
 }

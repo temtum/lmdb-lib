@@ -40,16 +40,16 @@ enum class LmdbLibKeyType {
 
     // Invalid key (used internally by lmdb-lib)
     InvalidKey = -1,
-    
+
     // Default key (used internally by lmdb-lib)
     DefaultKey = 0,
 
     // UCS-2/UTF-16 with zero terminator - Appears to V8 as string
     StringKey = 1,
-    
+
     // LMDB fixed size integer key with 32 bit keys - Appearts to V8 as an Uint32
     Uint32Key = 2,
-    
+
     // LMDB default key format - Appears to V8 as node::Buffer
     BinaryKey = 3,
 
@@ -102,7 +102,7 @@ private:
     static Nan::Persistent<Function> txnCtor;
     // Constructor for DbiWrap
     static Nan::Persistent<Function> dbiCtor;
-    
+
     // Cleans up stray transactions
     void cleanupStrayTxns();
 
@@ -126,12 +126,12 @@ public:
         Get the maximum size of keys and MDB_DUPSORT data we can write.
     */
     static NAN_METHOD(getMaxkeysize);
-    
+
     /*
         Gets statistics about the database environment.
     */
     static NAN_METHOD(stat);
-    
+
     /*
         Gets information about the database environment.
     */
@@ -214,6 +214,15 @@ public:
         * Callback to be executed after the sync is complete.
     */
     static NAN_METHOD(sync);
+
+    /*
+        Performs a set of operations asynchronously, automatically wrapping it in its own transaction
+
+        Parameters:
+
+        * Callback to be executed after the sync is complete.
+    */
+    static NAN_METHOD(batchWrite);
 };
 
 /*
@@ -231,10 +240,10 @@ private:
 
     // Environment wrapper of the current transaction
     EnvWrap *ew;
-    
+
     // Flags used with mdb_txn_begin
     unsigned int flags;
-    
+
     // Remove the current TxnWrap from its EnvWrap
     void removeFromEnvWrap();
 
@@ -431,6 +440,7 @@ private:
 
     friend class TxnWrap;
     friend class CursorWrap;
+    friend class EnvWrap;
 
 public:
     DbiWrap(MDB_env *env, MDB_dbi dbi);
@@ -479,10 +489,10 @@ private:
     MDB_val key, data;
     // Free function for the current key
     argtokey_callback_t freeKey;
-    
+
     DbiWrap *dw;
     TxnWrap *tw;
-    
+
     template<size_t keyIndex, size_t optionsIndex>
     friend argtokey_callback_t cursorArgToKey(CursorWrap* cw, Nan::NAN_METHOD_ARGS_TYPE info, MDB_val &key, bool &keyIsValid);
 

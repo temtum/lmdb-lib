@@ -135,7 +135,7 @@ struct action_t {
 class BatchWorker : public Nan::AsyncProgressWorker {
   public:
     BatchWorker(MDB_env* env, action_t *actions, int actionCount, int putFlags, Nan::Callback *callback, Nan::Callback *progress)
-      : Nan::AsyncProgressWorker(callback, "node-lmdb:Batch"),
+      : Nan::AsyncProgressWorker(callback, "lmdb-lib:Batch"),
       actions(actions),
       actionCount(actionCount),
       putFlags(putFlags),
@@ -322,7 +322,7 @@ NAN_METHOD(EnvWrap::open) {
     setFlagFromValue(&flags, MDB_NOLOCK, "unsafeNoLock", false, options);
 
     if (flags & MDB_NOLOCK) {
-        fprintf(stderr, "You chose to use MDB_NOLOCK which is not officially supported by node-lmdb. You have been warned!\n");
+        fprintf(stderr, "You chose to use MDB_NOLOCK which is not officially supported by lmdb-lib. You have been warned!\n");
     }
 
     // Set MDB_NOTLS to enable multiple read-only transactions on the same thread (in this case, the nodejs main thread)
@@ -549,7 +549,7 @@ NAN_METHOD(EnvWrap::batchWrite) {
     );
     int persistedIndex = 0;
     bool keyIsValid = false;
-    NodeLmdbKeyType keyType;
+    LmdbLibKeyType keyType;
 
     for (unsigned int i = 0; i < array->Length(); i++) {
         if (!array->Get(i)->IsObject())
