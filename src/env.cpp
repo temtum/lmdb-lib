@@ -1,4 +1,3 @@
-
 // This file is part of lmdb-lib, the Node.js binding for lmdb
 // Copyright (c) 2013-2017 Timur Kristóf
 // Licensed to you under the terms of the MIT license
@@ -135,7 +134,7 @@ struct action_t {
 class BatchWorker : public Nan::AsyncProgressWorker {
   public:
     BatchWorker(MDB_env* env, action_t *actions, int actionCount, int putFlags, Nan::Callback *callback, Nan::Callback *progress)
-      : Nan::AsyncProgressWorker(callback, "node-lmdb:Batch"),
+      : Nan::AsyncProgressWorker(callback, "lmdb-lib:Batch"),
       actions(actions),
       actionCount(actionCount),
       putFlags(putFlags),
@@ -237,161 +236,6 @@ class BatchWorker : public Nan::AsyncProgressWorker {
         Local<Context> context = Nan::GetCurrentContext();
         for (; resultIndex < currentIndex; resultIndex++) {
             resultsArray->Set(context, resultIndex, Nan::New<Number>(results[resultIndex]));
-        }
-        return resultsArray;
-    }
-
-    void HandleProgressCallback(const char *data, size_t count) {
-        Nan::HandleScope scope;
-        v8::Local<v8::Value> argv[] = {
-            updatedResultsArray(*reinterpret_cast<int*>(const_cast<char*>(data)))
-        };
-
-        progress->Call(1, argv, async_resource);
-    }
-
-    void HandleOKCallback() {
-        Nan::HandleScope scope;
-        v8::Local<v8::Value> argv[] = {
-            Nan::Null(),
-            updatedResultsArray(actionCount)
-        };
-
-        callback->Call(2, argv, async_resource);
-    }
-
-  private:
-    MDB_env* env;
-    int actionCount;
-    int* results;
-    int resultIndex = 0;
-    bool hasResultsArray = false;
-    action_t* actions;
-    int putFlags;
-    Nan::Callback* progress;
-};
-
-
-struct condition_t {
-    MDB_val key;
-    MDB_val data;
-    MDB_dbi dbi;
-    bool matchSize;
-    argtokey_callback_t freeKey;
-};
-
-struct action_t {
-    MDB_val key;
-    MDB_val data;
-    MDB_dbi dbi;
-    condition_t *condition;
-    argtokey_callback_t freeKey;
-};
-
-class BatchWorker : public Nan::AsyncProgressWorker {
-  public:
-    BatchWorker(MDB_env* env, action_t *actions, int actionCount, int putFlags, Nan::Callback *callback, Nan::Callback *progress)
-      : Nan::AsyncProgressWorker(callback, "lmdb-lib:Batch"),
-      actions(actions),
-      actionCount(actionCount),
-      putFlags(putFlags),
-      env(env),
-      progress(progress) {
-        results = new int[actionCount];
-    }
-
-    ~BatchWorker() {
-        for (int i = 0; i < actionCount; i++) {
-            action_t* action = &actions[i];
-            condition_t* condition = action->condition;
-            if (condition) {
-                delete condition;
-            }
-        }
-        delete[] actions;
-        delete[] results;
-        delete progress;
-    }
-
-    void Execute(const ExecutionProgress& executionProgress) {
-        MDB_txn *txn;
-        int rc = mdb_txn_begin(env, nullptr, 0, &txn);
-        if (rc != 0) {
-            return SetErrorMessage(mdb_strerror(rc));
-        }
-        int getCount = 0;
-
-        for (int i = 0; i < actionCount;) {
-            action_t* action = &actions[i];
-            condition_t* condition = action->condition;
-            if (condition) {
-                MDB_val value;
-                rc = mdb_get(txn, condition->dbi, &condition->key, &value);
-                bool different;
-                if (condition->data.mv_data == nullptr) {
-                    different = rc != MDB_NOTFOUND;
-                } else {
-                    if (rc == MDB_NOTFOUND) {
-                        different = true;
-                    } else {
-                        different = (condition->matchSize ? value.mv_size != condition->data.mv_size : value.mv_size < condition->data.mv_size) ||
-                        memcmp(value.mv_data, condition->data.mv_data, condition->data.mv_size);
-                    }
-                }
-                if (different) {
-                    results[i] = 1;
-                } else {
-                    // condition matches, remove condition, same as having no condition
-                    condition = nullptr;
-                    results[i] = 0;
-                }
-            } else {
-                results[i] = 0;
-            }
-            if (condition) {
-                rc = 0; // make sure this gets set back to zero, failed conditions shouldn't trigger error
-            } else {
-                if (action->data.mv_data == nullptr) {
-                    rc = mdb_del(txn, action->dbi, &action->key, nullptr);
-                    if (rc == MDB_NOTFOUND) {
-                        rc = 0; // ignore not_found errors
-                        results[i] = 2;
-                    }
-                } else {
-                    rc = mdb_put(txn, action->dbi, &action->key, &action->data, putFlags);
-                }
-            }
-
-            if (action->freeKey) { // if we created a key and needs to be cleaned up, do it now
-                action->freeKey(action->key);
-            }
-            if (rc != 0) {
-                mdb_txn_abort(txn);
-                return SetErrorMessage(mdb_strerror(rc));
-            }
-            i++;
-            if (progress) { // let node know that progress updates are available
-                executionProgress.Send(reinterpret_cast<const char*>(&i), sizeof(int));
-            }
-        }
-
-        rc = mdb_txn_commit(txn);
-        if (rc != 0) {
-            return SetErrorMessage(mdb_strerror(rc));
-        }
-    }
-
-    v8::Local<v8::Array> updatedResultsArray(int currentIndex) {
-        v8::Local<v8::Array> resultsArray;
-        if (hasResultsArray) {
-            resultsArray = v8::Local<v8::Array>::Cast(GetFromPersistent("results"));
-        } else {
-            resultsArray = Nan::New<v8::Array>(actionCount);
-            SaveToPersistent("results", resultsArray);
-            hasResultsArray = true;
-        }
-        for (; resultIndex < currentIndex; resultIndex++) {
-            resultsArray->Set(resultIndex, Nan::New<Number>(results[resultIndex]));
         }
         return resultsArray;
     }
@@ -534,20 +378,6 @@ NAN_METHOD(EnvWrap::close) {
     ew->env = nullptr;
 }
 
-NAN_METHOD(EnvWrap::getMaxkeysize) {
-    Nan::HandleScope scope;
-
-    // Get the wrapper
-    EnvWrap *ew = Nan::ObjectWrap::Unwrap<EnvWrap>(info.This());
-    if (!ew->env) {
-        return Nan::ThrowError("The environment is already closed.");
-    }
-
-    int rc = mdb_env_get_maxkeysize(ew->env);
-
-    info.GetReturnValue().Set(rc);
-}
-
 NAN_METHOD(EnvWrap::stat) {
     Nan::HandleScope scope;
 
@@ -663,6 +493,19 @@ NAN_METHOD(EnvWrap::sync) {
     return;
 }
 
+NAN_METHOD(EnvWrap::getMaxkeysize) {
+    Nan::HandleScope scope;
+
+    // Get the wrapper
+    EnvWrap *ew = Nan::ObjectWrap::Unwrap<EnvWrap>(info.This());
+    if (!ew->env) {
+        return Nan::ThrowError("The environment is already closed.");
+    }
+
+    int rc = mdb_env_get_maxkeysize(ew->env);
+
+    info.GetReturnValue().Set(rc);
+}
 
 NAN_METHOD(EnvWrap::batchWrite) {
     Nan::HandleScope scope;
@@ -708,7 +551,7 @@ NAN_METHOD(EnvWrap::batchWrite) {
     );
     int persistedIndex = 0;
     bool keyIsValid = false;
-    NodeLmdbKeyType keyType;
+    LmdbLibKeyType keyType;
 
     for (unsigned int i = 0; i < array->Length(); i++) {
         if (!array->Get(context, i).ToLocalChecked()->IsObject())
