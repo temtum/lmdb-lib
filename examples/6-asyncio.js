@@ -1,6 +1,6 @@
 
 // Require the module
-var lmdb = require('../lmdb');
+var lmdb = require('../index');
 
 // Create new LMDB environment
 var env = new lmdb.Env();

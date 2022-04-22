@@ -1,6 +1,6 @@
 /* mdb_dump.c - memory-mapped database dump tool */
 /*
- * Copyright 2011-2018 Howard Chu, Symas Corp.
+ * Copyright 2011-2020 Howard Chu, Symas Corp.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -64,6 +64,8 @@ static void text(MDB_val *v)
 	end = c + v->mv_size;
 	while (c < end) {
 		if (isprint(*c)) {
+			if (*c == '\\')
+				putchar('\\');
 			putchar(*c);
 		} else {
 			putchar('\\');
@@ -179,7 +181,7 @@ int main(int argc, char *argv[])
 	 * -V: print version and exit
 	 * (default) dump only the main DB
 	 */
-	while ((i = getopt(argc, argv, "af:lnps:V")) != EOF) {
+	while ((i = getopt(argc, argv, "af:lnps:vV")) != EOF) {
 		switch(i) {
 		case 'V':
 			printf("%s\n", MDB_VERSION_STRING);

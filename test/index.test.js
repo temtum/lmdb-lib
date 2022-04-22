@@ -12,6 +12,7 @@ const MAX_DB_SIZE = 256 * 1024 * 1024;
 
 describe('Node.js LMDB Bindings', function() {
   var testDirPath = path.resolve(__dirname, './testdata');
+  var testBackupDirPath = path.resolve(__dirname, './testdata/backup');
 
   // just to make a reasonable sized chunk of data...
   function expand(str) {
@@ -31,11 +32,10 @@ describe('Node.js LMDB Bindings', function() {
         return done(err);
       }
       // setup clean directory
-      mkdirp(testDirPath, function(err) {
-        if (err) {
-          return done(err);
-        }
+      mkdirp(testBackupDirPath).then(function() {
         done();
+      }, function(err) {
+        done(err);
       });
     });
   });
@@ -115,13 +115,20 @@ describe('Node.js LMDB Bindings', function() {
       });
       dbi.close();
     });
-    it('will open a database, begin a transaction and get/put/delete string data containing zeros', function() {
+    it.skip('will open a database, begin a transaction and get/put/delete string data containing zeros', function() {
       var dbi = env.openDbi({
         name: 'mydb1x',
         create: true
       });
-      var txn = env.beginTxn();
+//      dbi.close();
+      var txn = env.beginTxn({readOnly: true});
+  /*    var dbi = env.openDbi({
+        name: 'mydb1x',
+        //txn
+      });*/
       var data = txn.getString(dbi, 'hello');
+      txn.reset();
+      var txn = env.beginTxn();
       should.equal(data, null);
       txn.putString(dbi, 'hello', 'Hello \0 world!');
       var data2 = txn.getString(dbi, 'hello');
@@ -288,6 +295,20 @@ describe('Node.js LMDB Bindings', function() {
       txn.abort();
       dbi.close();
     });
+    it('will create a database and back it up', function (done) {
+      var txn = env.beginTxn();
+      var dbi = env.openDbi({
+        name: 'backup',
+        create: true,
+        txn: txn
+      });
+      txn.putString(dbi, 'hello', 'world');
+      txn.commit();
+      env.copy(testBackupDirPath, (error) => {
+        done(error)
+      });
+//      console.log('sent copy')
+    });
   });
   describe('Data types', function() {
     this.timeout(10000);
@@ -340,7 +361,12 @@ describe('Node.js LMDB Bindings', function() {
       var buffer = new Buffer('48656c6c6f2c20776f726c6421', 'hex');
       txn.putBinary(dbi, 'key2', buffer);
       var data = txn.getBinaryUnsafe(dbi, 'key2');
+      var byte = data[0]; // make sure we can access it
+      env.detachBuffer(data.buffer);
+      var data = txn.getBinaryUnsafe(dbi, 'key2');
+      var byte = data[0]; // make sure we can access it
       data.should.deep.equal(buffer);
+      env.detachBuffer(data.buffer);
       txn.del(dbi, 'key2');
       var data2 = txn.getBinaryUnsafe(dbi, 'key2');
       should.equal(data2, null);
@@ -971,6 +997,22 @@ describe('Node.js LMDB Bindings', function() {
     this.timeout(10000);
     it('will run a cluster of processes with read-only transactions', function(done) {
       var child = spawn('node', [path.resolve(__dirname, './cluster')]);
+      child.stdout.on('data', function(data) {
+        console.log(data.toString());
+      });
+      child.stderr.on('data', function(data) {
+        console.error(data.toString());
+      });
+      child.on('close', function(code) {
+        code.should.equal(0);
+        done();
+      });
+    });
+  });
+  describe('Threads', function() {
+    this.timeout(10000);
+    it('will run a group of threads with read-only transactions', function(done) {
+      var child = spawn('node', [path.resolve(__dirname, './threads')]);
       child.stdout.on('data', function(data) {
         console.log(data.toString());
       });

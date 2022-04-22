@@ -79,6 +79,9 @@ NAN_METHOD(TxnWrap::ctor) {
     MDB_txn *txn;
     int rc = mdb_txn_begin(ew->env, nullptr, flags, &txn);
     if (rc != 0) {
+        if (rc == EINVAL) {
+            return Nan::ThrowError("Invalid parameter, which on MacOS is often due to more transactions than available robust locked semaphors (see node-lmdb docs for more info)");
+        }
         return throwLmdbError(rc);
     }
 
@@ -292,6 +295,8 @@ Nan::NAN_METHOD_RETURN_TYPE TxnWrap::putCommon(Nan::NAN_METHOD_ARGS_TYPE info, v
 }
 
 NAN_METHOD(TxnWrap::putString) {
+    if (!info[2]->IsString())
+        return Nan::ThrowError("Value must be a string.");
     return putCommon(info, [](Nan::NAN_METHOD_ARGS_TYPE info, MDB_val &data) -> void {
         CustomExternalStringResource::writeTo(Local<String>::Cast(info[2]), &data);
     }, [](MDB_val &data) -> void {
@@ -309,7 +314,11 @@ NAN_METHOD(TxnWrap::putBinary) {
 }
 
 // This is used by putNumber for temporary storage
+#ifdef thread_local
 static thread_local double numberToPut = 0.0;
+#else
+static double numberToPut = 0.0;
+#endif
 
 NAN_METHOD(TxnWrap::putNumber) {
     return putCommon(info, [](Nan::NAN_METHOD_ARGS_TYPE info, MDB_val &data) -> void {
@@ -322,7 +331,11 @@ NAN_METHOD(TxnWrap::putNumber) {
 }
 
 // This is used by putBoolean for temporary storage
+#ifdef thread_local
 static thread_local bool booleanToPut = false;
+#else
+static bool booleanToPut = false;
+#endif
 
 NAN_METHOD(TxnWrap::putBoolean) {
     return putCommon(info, [](Nan::NAN_METHOD_ARGS_TYPE info, MDB_val &data) -> void {

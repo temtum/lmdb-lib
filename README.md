@@ -264,7 +264,7 @@ Advanced examples:
 
 #### Unsafe Get Methods
 Because of the nature of LMDB, the data returned by `txn.getStringUnsafe()`, `txn.getBinaryUnsafe()`, `cursor.getCurrentStringUnsafe()`
-and `cursor.getCurrentBinaryUnsafe()` is **only valid until the next `put` operation or the end of the transaction**.
+and `cursor.getCurrentBinaryUnsafe()` is **only valid until the next `put` operation or the end of the transaction**. Also, with Node 14+, you must detach the buffer after using it, by calling `env.detachBuffer(buffer)`. This must be done before accessing the same entry again (or V8 will crash).
 If you need to use the data *later*, you can use the `txn.getBinary()`, `txn.getString()`, `cursor.getCurrentBinary()` and
 `cursor.getCurrentString()` methods. For most usage, the optimisation (no copy) gain from using the unsafe methods is so small
 as to be negligible - the `Unsafe` methods should be avoided.
@@ -322,6 +322,12 @@ const data3 = txn.getString(dbi, key);
 // At this point, data3 is equal to expectedString
 
 ```
+##### Build Options
+A few LMDB options are available at build time, and can be specified with options with `npm install` (which can be specified in your package.json install script):
+`npm install --use_vl32=true`: This will enable LMDB's VL32 mode, when running on 32-bit architecture, which adds support for large (multi-GB) databases on 32-bit architecture.
+`npm install --use_fixed_size=true`: This will enable LMDB's fixed-size option, when running on Windows, which causes Windows to allocate the full file size needed for the memory-mapped allocation size. The default behavior of dynamically growing file size as the allocated memory map, while convenient, uses a non-standard Windows API and can cause significant performance degradation, but using the fixed size option ensures much more stable/better performance on Windows (consider using [lmdb-store](https://github.com/DoctorEvidence/lmdb-store) on top of node-lmdb for automated memory-map growth).
+
+On MacOS, there is a default limit of 10 robust locked semaphores, which imposes a limit on the number of open write transactions (if you have over 10 db environments with a write transaction). If you need more concurrent write transactions, you can increase your  maximum undoable semaphore count by setting kern.sysv.semmnu on your local computer. Or you can build with POSIX semaphores, using `npm install --use_posix_semaphores=true`. However POSIX semaphores are not robust semaphores, which means that if you are running multiple processes and one crashes in the midst of transaction, it may block other processes from starting a transaction on that environment. Or try to minimize overlapping transactions and/or reduce the number of db environments (and use more databases within each environment).
 
 ### Limitations of lmdb-lib
 
@@ -415,13 +421,13 @@ node-gyp build
 
 ```bash
 # Adding upstream LMDB as remote
-git remote add lmdb https://github.com/LMDB/lmdb.git
+git remote add lmdb https://git.openldap.org/openldap/openldap.git
 # Fetch new remote
 git fetch lmdb
 # Adding the subtree (when it's not there yet)
-git subtree add  --prefix=dependencies/lmdb lmdb mdb.RE/0.9 --squash
+git subtree add  --prefix=dependencies/lmdb lmdb mdb.master --squash
 # Updating the subtree (when already added)
-git subtree pull --prefix=dependencies/lmdb lmdb mdb.RE/0.9 --squash
+git subtree pull --prefix=dependencies/lmdb lmdb mdb.master --squash
 ```
 
 ### Developer FAQ
@@ -468,6 +474,7 @@ Big thank you to everybody!
 * @jahewson (John Hewson)
 * @jeffesquivels (Jeffrey Esquivel S.)
 * @justmoon (Stefan Thomas)
+* @kriszyp (Kris Zyp)
 * @Matt-Esch
 * @oliverzy (Oliver Zhou)
 * @paberr (Pascal Berrang)

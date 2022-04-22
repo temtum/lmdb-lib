@@ -1,6 +1,6 @@
 
 // Require the module
-var lmdb = require('../lmdb');
+var lmdb = require('../index');
 // Now you can use the module
 
 // Print the version
@@ -26,7 +26,7 @@ var txn = env.beginTxn();
 
 // Get data
 var data = txn.getString(dbi, "hello");
-console.log(data);
+console.log('data: ', data);
 
 var stat = dbi.stat(txn);
 console.log("\ndatabase statistics:");

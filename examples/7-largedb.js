@@ -5,7 +5,7 @@
 
 // Set things up
 
-var lmdb = require('../lmdb');
+var lmdb = require('../index');
 var fs = require('fs');
 
 var env = new lmdb.Env();

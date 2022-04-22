@@ -42,7 +42,11 @@ void setupExportMisc(Local<Object> exports) {
 void setFlagFromValue(int *flags, int flag, const char *name, bool defaultValue, Local<Object> options) {
     Local<Context> context = Nan::GetCurrentContext();
     Local<Value> opt = options->Get(context, Nan::New<String>(name).ToLocalChecked()).ToLocalChecked();
-    if (opt->IsBoolean() ? opt->BooleanValue(context).ToChecked() : defaultValue) {
+    #if NODE_VERSION_AT_LEAST(12,0,0)
+    if (opt->IsBoolean() ? opt->BooleanValue(Isolate::GetCurrent()) : defaultValue) {
+    #else
+    if (opt->IsBoolean() ? opt->BooleanValue(context).FromJust() : defaultValue) {
+    #endif;
         *flags |= flag;
     }
 }
@@ -150,7 +154,7 @@ argtokey_callback_t argToKey(const Local<Value> &val, MDB_val &key, LmdbLibKeyTy
         
         isValid = true;
         uint32_t* uint32Key = new uint32_t;
-        *uint32Key = val->Uint32Value(Nan::GetCurrentContext()).ToChecked();
+        *uint32Key = val->Uint32Value(Nan::GetCurrentContext()).FromJust();
         key.mv_size = sizeof(uint32_t);
         key.mv_data = uint32Key;
 
@@ -279,7 +283,7 @@ void consoleLogN(int n) {
 void CustomExternalStringResource::writeTo(Local<String> str, MDB_val *val) {
     unsigned int l = str->Length() + 1;
     uint16_t *d = new uint16_t[l];
-    #if NODE_VERSION_AT_LEAST(10,0,0)
+    #if NODE_VERSION_AT_LEAST(12,0,0)
     str->Write(Isolate::GetCurrent(), d);
     #else
     str->Write(d);
